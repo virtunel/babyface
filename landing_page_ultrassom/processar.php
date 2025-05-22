@@ -4,6 +4,11 @@ $uploadDir = 'uploads/';
 $maxFileSize = 5 * 1024 * 1024; // 5MB
 $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
+// Chaves DLocal (em produção, use variáveis de ambiente)
+$X_LOGIN = "seu_login_dlocal";
+$X_TRANS_KEY = "sua_chave_transacao_dlocal";
+$X_SECRET_KEY = "sua_chave_secreta_dlocal";
+
 // Criar diretório de uploads se não existir
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0755, true);
@@ -24,12 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "O campo " . ucfirst($field) . " é obrigatório.";
         }
     }
-    
+
     // Validar email
     if (!empty($_POST['email']) && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
         $errors[] = "Por favor, informe um e-mail válido.";
     }
-    
+
     // Validar semanas de gestação
     if (!empty($_POST['semanas'])) {
         $semanas = (int)$_POST['semanas'];
@@ -37,12 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "As semanas de gestação devem estar entre 12 e 40.";
         }
     }
-    
+
     // Validar upload de arquivo
     if (isset($_FILES['ultrassom']) && $_FILES['ultrassom']['error'] !== UPLOAD_ERR_NO_FILE) {
         $file = $_FILES['ultrassom'];
-        
-        // Verificar erros de upload
+
         if ($file['error'] !== UPLOAD_ERR_OK) {
             switch ($file['error']) {
                 case UPLOAD_ERR_INI_SIZE:
@@ -61,19 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!in_array($fileType, $allowedTypes)) {
                 $errors[] = "Tipo de arquivo não permitido. Apenas JPEG, PNG, GIF e WEBP são aceitos.";
             }
-            
+
             // Verificar tamanho do arquivo
             if ($file['size'] > $maxFileSize) {
                 $errors[] = "O arquivo é muito grande. Tamanho máximo permitido: 5MB.";
             }
-            
+
             // Processar upload se não houver erros
             if (empty($errors)) {
-                // Gerar nome único para o arquivo
                 $fileName = uniqid('ultrassom_') . '_' . basename($file['name']);
                 $uploadPath = $uploadDir . $fileName;
-                
-                // Mover arquivo para o diretório de uploads
+
                 if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
                     $uploadedFile = $fileName;
                 } else {
@@ -84,33 +86,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $errors[] = "Por favor, selecione uma imagem de ultrassom.";
     }
-    
-    // Se não houver erros, processar o pagamento e redirecionar
+
+    // Se não houver erros, criar pedido no DLocal
     if (empty($errors)) {
-        // Salvar dados no banco de dados (simulado)
         $nome = htmlspecialchars($_POST['nome']);
         $email = htmlspecialchars($_POST['email']);
         $telefone = !empty($_POST['telefone']) ? htmlspecialchars($_POST['telefone']) : '';
         $semanas = (int)$_POST['semanas'];
-        $comentarios = !empty($_POST['comentarios']) ? htmlspecialchars($_POST['comentarios']) : '';
-        
-        // Simular processamento de pagamento
-        $pagamentoAprovado = true; // Em um cenário real, isso viria de uma API de pagamento
-        
-        if ($pagamentoAprovado) {
-            // Gerar ID único para o pedido
-            $pedidoId = uniqid('PED');
-            
-            // Em um cenário real, salvaríamos esses dados em um banco de dados
-            // Aqui, apenas simulamos o sucesso da operação
-            
-            // Redirecionar para página de confirmação
-            $redirectUrl = "confirmacao.php?pedido=" . $pedidoId;
-            $success = true;
+
+        // Criar pedido no DLocal
+        $orderId = uniqid('PED');
+        $amount = 1990; // R$ 19,90 em centavos
+
+        $dlocalData = [
+            'amount' => $amount,
+            'currency' => 'BRL',
+            'country' => 'BR',
+            'payment_method_id' => 'CARD',
+            'order_id' => $orderId,
+            'notification_url' => 'https://seu-dominio.repl.co/webhook.php',
+            'redirect_url' => 'https://seu-dominio.repl.co/confirmacao.php',
+            'payer' => [
+                'name' => $nome,
+                'email' => $email,
+                'phone' => $telefone
+            ],
+            'description' => 'Projeção do Bebê - ' . $semanas . ' semanas'
+        ];
+
+        // Gerar cabeçalhos para DLocal
+        $date = gmdate('Y-m-d\TH:i:s\Z');
+        $message = $X_LOGIN . $date . $dlocalData['amount'] . $dlocalData['currency'] . $dlocalData['country'];
+        $signature = hash_hmac('sha256', $message, $X_SECRET_KEY);
+
+        $headers = [
+            'X-Login: ' . $X_LOGIN,
+            'X-Trans-Key: ' . $X_TRANS_KEY,
+            'X-Date: ' . $date,
+            'X-Sign: ' . $signature,
+            'Content-Type: application/json',
+            'X-Version: 2.1'
+        ];
+
+        // Fazer requisição para DLocal
+        $ch = curl_init('https://api.dlocal.com/payments');
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dlocalData));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 || $httpCode === 201) {
+            $result = json_decode($response, true);
+            if (isset($result['redirect_url'])) {
+                header('Location: ' . $result['redirect_url']);
+                exit;
+            }
         } else {
-            $errors[] = "Não foi possível processar o pagamento. Por favor, tente novamente.";
+            $errors[] = "Erro ao processar pagamento. Por favor, tente novamente.";
         }
     }
+}
+
+// Se houver erros, exibir página de erro
+if (!empty($errors)) {
+    // Changed include to directly output the error page content
+?>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erro no Processamento - Projeção Bebê</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .error-container {
+            max-width: 600px;
+            margin: 100px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+
+        .error-list {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .error-list ul {
+            margin: 10px 0 0 20px;
+        }
+
+        .back-button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">
+                <img src="img/logo.png" alt="Projeção Bebê Logo">
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="container">
+            <div class="error-container">
+                <h2>Ops! Encontramos alguns problemas</h2>
+
+                <?php if (!empty($errors)): ?>
+                    <div class="error-list">
+                        <p><strong>Por favor, corrija os seguintes erros:</strong></p>
+                        <ul>
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo $error; ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <p>Não foi possível processar seu pedido. Por favor, volte e verifique as informações fornecidas.</p>
+
+                <div class="back-button">
+                    <a href="javascript:history.back()" class="btn btn-primary">Voltar e Corrigir</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Projeção Bebê - Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+
+<?php
+    exit;
 }
 ?>
 
