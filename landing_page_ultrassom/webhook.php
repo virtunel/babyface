@@ -1,8 +1,6 @@
 
 <?php
-// Configurações DLocal
-$X_LOGIN = "seu_login_dlocal";
-$X_SECRET_KEY = "sua_chave_secreta_dlocal";
+require_once 'dlocal_config.php';
 
 // Receber payload
 $payload = file_get_contents('php://input');
@@ -13,8 +11,8 @@ $headers = getallheaders();
 $signature = isset($headers['X-Sign']) ? $headers['X-Sign'] : '';
 $date = isset($headers['X-Date']) ? $headers['X-Date'] : '';
 
-$message = $X_LOGIN . $date . $data['id'];
-$expectedSignature = hash_hmac('sha256', $message, $X_SECRET_KEY);
+$message = DLOCAL_LOGIN . $date . $data['id'];
+$expectedSignature = hash_hmac('sha256', $message, DLOCAL_SECRET_KEY);
 
 if (hash_equals($signature, $expectedSignature)) {
     // Processar notificação

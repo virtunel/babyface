@@ -1,4 +1,6 @@
 <?php
+// dlocal_config.php - Configuration file for DLocal settings.
+
 // Configurações
 $uploadDir = 'uploads/';
 $maxFileSize = 5 * 1024 * 1024; // 5MB
@@ -13,6 +15,96 @@ $X_SECRET_KEY = "sua_chave_secreta_dlocal";
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0755, true);
 }
+?>
+<?php
+// erro.php - Error page to display error messages to the user.
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erro no Processamento - Projeção Bebê</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .error-container {
+            max-width: 600px;
+            margin: 100px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+
+        .error-list {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .error-list ul {
+            margin: 10px 0 0 20px;
+        }
+
+        .back-button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">
+                <img src="img/logo.png" alt="Projeção Bebê Logo">
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="container">
+            <div class="error-container">
+                <h2>Ops! Encontramos alguns problemas</h2>
+
+                <?php if (!empty($errors)): ?>
+                    <div class="error-list">
+                        <p><strong>Por favor, corrija os seguintes erros:</strong></p>
+                        <ul>
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo $error; ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <p>Não foi possível processar seu pedido. Por favor, volte e verifique as informações fornecidas.</p>
+
+                <div class="back-button">
+                    <a href="javascript:history.back()" class="btn btn-primary">Voltar e Corrigir</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Projeção Bebê - Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+<?php
+// processar.php - Process form data and integrate with DLocal.
+// Incluir arquivo de configuração
+require_once 'dlocal_config.php';
 
 // Inicializar variáveis
 $errors = [];
@@ -151,95 +243,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Se houver erros, exibir página de erro
+// Se houver erros, incluir página de erro
 if (!empty($errors)) {
-    // Changed include to directly output the error page content
-?>
-
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erro no Processamento - Projeção Bebê</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .error-container {
-            max-width: 600px;
-            margin: 100px auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            text-align: center;
-        }
-
-        .error-list {
-            background-color: #ffebee;
-            border-left: 4px solid #f44336;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-
-        .error-list ul {
-            margin: 10px 0 0 20px;
-        }
-
-        .back-button {
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <header class="navbar">
-        <div class="container">
-            <div class="logo">
-                <img src="img/logo.png" alt="Projeção Bebê Logo">
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <section class="container">
-            <div class="error-container">
-                <h2>Ops! Encontramos alguns problemas</h2>
-
-                <?php if (!empty($errors)): ?>
-                    <div class="error-list">
-                        <p><strong>Por favor, corrija os seguintes erros:</strong></p>
-                        <ul>
-                            <?php foreach ($errors as $error): ?>
-                                <li><?php echo $error; ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-
-                <p>Não foi possível processar seu pedido. Por favor, volte e verifique as informações fornecidas.</p>
-
-                <div class="back-button">
-                    <a href="javascript:history.back()" class="btn btn-primary">Voltar e Corrigir</a>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-bottom">
-                <p>&copy; 2025 Projeção Bebê - Todos os direitos reservados.</p>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>
-
-<?php
+    include 'erro.php';
     exit;
 }
 ?>
@@ -260,20 +266,20 @@ if (!empty($errors)) {
             text-align: center;
             padding: 100px 20px;
         }
-        
+
         .processing-icon {
             font-size: 4rem;
             color: var(--primary-color);
             margin-bottom: 20px;
             animation: pulse 1.5s infinite;
         }
-        
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        
+
         .error-container {
             max-width: 600px;
             margin: 0 auto;
@@ -282,7 +288,7 @@ if (!empty($errors)) {
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
         }
-        
+
         .error-list {
             background-color: #ffebee;
             border-left: 4px solid #f44336;
@@ -290,11 +296,11 @@ if (!empty($errors)) {
             margin-bottom: 20px;
             border-radius: 4px;
         }
-        
+
         .error-list ul {
             margin: 10px 0 0 20px;
         }
-        
+
         .back-button {
             margin-top: 20px;
         }
@@ -324,29 +330,6 @@ if (!empty($errors)) {
                     window.location.href = "<?php echo $redirectUrl; ?>";
                 }, 3000);
             </script>
-        <?php else: ?>
-            <section class="container">
-                <div class="error-container">
-                    <h2>Ops! Encontramos alguns problemas</h2>
-                    
-                    <?php if (!empty($errors)): ?>
-                        <div class="error-list">
-                            <p><strong>Por favor, corrija os seguintes erros:</strong></p>
-                            <ul>
-                                <?php foreach ($errors as $error): ?>
-                                    <li><?php echo $error; ?></li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <p>Não foi possível processar seu pedido. Por favor, volte e verifique as informações fornecidas.</p>
-                    
-                    <div class="back-button">
-                        <a href="javascript:history.back()" class="btn btn-primary">Voltar e Corrigir</a>
-                    </div>
-                </div>
-            </section>
         <?php endif; ?>
     </main>
 
@@ -359,3 +342,17 @@ if (!empty($errors)) {
     </footer>
 </body>
 </html>
+<?php
+// webhook.php - Webhook endpoint for DLocal notifications.
+// In a real implementation, you'd load configurations and validate the webhook call
+require_once 'dlocal_config.php';
+
+// Basic example, needs proper validation and handling
+$data = json_decode(file_get_contents('php://input'), true);
+
+// Log the data (for debugging purposes)
+error_log(print_r($data, true));
+
+// Respond to DLocal (important!)
+http_response_code(200);
+?>
