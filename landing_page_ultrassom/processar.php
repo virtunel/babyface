@@ -188,16 +188,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Criar pedido no DLocal
         $orderId = uniqid('PED');
-        $amount = 1990; // R$ 19,90 em centavos
+        $amount = DLOCAL_AMOUNT;
 
         $dlocalData = [
             'amount' => $amount,
-            'currency' => 'BRL',
-            'country' => 'BR',
+            'currency' => DLOCAL_CURRENCY,
+            'country' => DLOCAL_COUNTRY,
             'payment_method_id' => 'CARD',
             'order_id' => $orderId,
-            'notification_url' => 'https://seu-dominio.repl.co/webhook.php',
-            'redirect_url' => 'https://seu-dominio.repl.co/confirmacao.php',
+            'notification_url' => DLOCAL_NOTIFICATION_URL,
+            'redirect_url' => DLOCAL_RETURN_URL,
             'payer' => [
                 'name' => $nome,
                 'email' => $email,
@@ -208,20 +208,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Gerar cabeçalhos para DLocal
         $date = gmdate('Y-m-d\TH:i:s\Z');
-        $message = $X_LOGIN . $date . $dlocalData['amount'] . $dlocalData['currency'] . $dlocalData['country'];
-        $signature = hash_hmac('sha256', $message, $X_SECRET_KEY);
+        $message = DLOCAL_TRANS_KEY . $date . $dlocalData['id'];
+        $signature = hash_hmac('sha256', $message, DLOCAL_SECRET_KEY);
 
         $headers = [
-            'X-Login: ' . $X_LOGIN,
-            'X-Trans-Key: ' . $X_TRANS_KEY,
+            'X-Login: ' . DLOCAL_TRANS_KEY,
+            'X-Trans-Key: ' . DLOCAL_TRANS_KEY,
             'X-Date: ' . $date,
             'X-Sign: ' . $signature,
             'Content-Type: application/json',
-            'X-Version: 2.1'
+            'Authorization: Bearer ' . DLOCAL_SECRET_KEY
         ];
 
         // Fazer requisição para DLocal
-        $ch = curl_init('https://api.dlocal.com/payments');
+        $ch = curl_init(DLOCAL_API_URL . '/payments');
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dlocalData));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
