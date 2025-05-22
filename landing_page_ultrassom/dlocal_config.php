@@ -5,10 +5,10 @@
  * Arquivo para centralizar as configurações de integração com o gateway de pagamento
  */
 
-// Chaves de API DLocal (em produção, use variáveis de ambiente)
-define('DLOCAL_LOGIN', 'seu_login_dlocal');
-define('DLOCAL_TRANS_KEY', 'sua_chave_transacao_dlocal');
-define('DLOCAL_SECRET_KEY', 'sua_chave_secreta_dlocal');
+// Chaves de API DLocal (ambiente de sandbox)
+define('DLOCAL_API_URL', 'https://api-sbx.dlocalgo.com');
+define('DLOCAL_TRANS_KEY', 'zHSYwQzTTShroOMMHqQKiKtYufhLWJnO');
+define('DLOCAL_SECRET_KEY', 'kGDY1i7hU8oe6uwkMTZMPfTXppqgAAtIN3pecV6a');
 
 // Configurações de ambiente
 define('DLOCAL_CURRENCY', 'BRL');
