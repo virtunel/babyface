@@ -245,7 +245,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Se houver erros, incluir página de erro
 if (!empty($errors)) {
-    include 'erro.php';
+    // Armazenar erros em sessão para exibição
+    session_start();
+    $_SESSION['errors'] = $errors;
+    
+    // Redirecionar para página de erro
+    header('Location: erro.php');
     exit;
 }
 ?>

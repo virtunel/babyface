@@ -4,10 +4,11 @@
  * Página de erro para exibir mensagens de erro ao usuário
  */
 
-// Garantir que a variável $errors esteja definida
-if (!isset($errors) || !is_array($errors)) {
-    $errors = ['Ocorreu um erro desconhecido. Por favor, tente novamente.'];
-}
+// Iniciar sessão e recuperar erros
+session_start();
+$errors = isset($_SESSION['errors']) ? $_SESSION['errors'] : ['Ocorreu um erro desconhecido. Por favor, tente novamente.'];
+// Limpar erros da sessão
+unset($_SESSION['errors']);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
