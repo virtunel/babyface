@@ -1,7 +1,6 @@
 
 <?php
 session_start();
-
 /**
  * Configurações do DLocal
  * Arquivo para centralizar as configurações de integração com o gateway de pagamento
