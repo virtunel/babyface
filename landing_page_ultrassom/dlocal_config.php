@@ -1,12 +1,11 @@
 
 <?php
+session_start();
+
 /**
  * Configurações do DLocal
  * Arquivo para centralizar as configurações de integração com o gateway de pagamento
  */
-
-// Iniciar sessão
-session_start();
 
 // Chaves de API DLocal (ambiente de sandbox)
 define('DLOCAL_API_URL', 'https://api-sbx.dlocalgo.com');
