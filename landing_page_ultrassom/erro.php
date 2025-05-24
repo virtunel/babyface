@@ -1,7 +1,9 @@
-
 <?php
-session_start();
+session_start(); // Deve ser o primeiro comando no arquivo
+
+// Recuperar erros
 $errors = isset($_SESSION['errors']) ? $_SESSION['errors'] : ['Ocorreu um erro desconhecido. Por favor, tente novamente.'];
+// Limpar erros da sessão
 unset($_SESSION['errors']);
 ?>
 <!DOCTYPE html>
