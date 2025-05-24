@@ -5,6 +5,9 @@
  * Arquivo para centralizar as configurações de integração com o gateway de pagamento
  */
 
+// Iniciar sessão
+session_start();
+
 // Chaves de API DLocal (ambiente de sandbox)
 define('DLOCAL_API_URL', 'https://api-sbx.dlocalgo.com');
 define('DLOCAL_TRANS_KEY', 'zHSYwQzTTShroOMMHqQKiKtYufhLWJnO');
@@ -22,4 +25,3 @@ define('DLOCAL_RETURN_URL', $protocol . $domain . '/confirmacao.php');
 
 // Configurações de pedido
 define('DLOCAL_AMOUNT', 1990); // R$ 19,90 em centavos
-?>

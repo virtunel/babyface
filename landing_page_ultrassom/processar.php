@@ -2,8 +2,7 @@
 // Incluir arquivo de configuração
 require_once 'dlocal_config.php';
 
-// Iniciar sessão no início do arquivo
-session_start();
+// A sessão já foi iniciada no dlocal_config.php
 
 // Configurações
 $uploadDir = 'uploads/';
