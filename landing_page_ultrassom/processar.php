@@ -2,6 +2,14 @@
 // Incluir arquivo de configuração
 require_once 'dlocal_config.php';
 
+// Iniciar sessão no início do arquivo
+session_start();
+
+// Configurações
+$uploadDir = 'uploads/';
+$maxFileSize = 5 * 1024 * 1024; // 5MB
+$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
 // Inicializar variáveis
 $errors = [];
 $success = false;
@@ -104,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Gerar cabeçalhos para DLocal
         $date = gmdate('Y-m-d\TH:i:s\Z');
-        $message = DLOCAL_TRANS_KEY . $date . $dlocalData['id'];
+        $message = DLOCAL_TRANS_KEY . $date . $orderId;
         $signature = hash_hmac('sha256', $message, DLOCAL_SECRET_KEY);
 
         $headers = [
@@ -113,7 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'X-Date: ' . $date,
             'X-Sign: ' . $signature,
             'Content-Type: application/json',
-            'Authorization: Bearer ' . DLOCAL_SECRET_KEY
         ];
 
         // Fazer requisição para DLocal
@@ -141,16 +148,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Se houver erros, incluir página de erro
 if (!empty($errors)) {
-    // Armazenar erros em sessão para exibição
-    session_start();
     $_SESSION['errors'] = $errors;
-    
-    // Redirecionar para página de erro
     header('Location: erro.php');
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -167,43 +169,16 @@ if (!empty($errors)) {
             text-align: center;
             padding: 100px 20px;
         }
-
         .processing-icon {
             font-size: 4rem;
             color: var(--primary-color);
             margin-bottom: 20px;
             animation: pulse 1.5s infinite;
         }
-
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
-        }
-
-        .error-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-        }
-
-        .error-list {
-            background-color: #ffebee;
-            border-left: 4px solid #f44336;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-
-        .error-list ul {
-            margin: 10px 0 0 20px;
-        }
-
-        .back-button {
-            margin-top: 20px;
         }
     </style>
 </head>
@@ -225,12 +200,6 @@ if (!empty($errors)) {
                 <h2>Processando seu pedido...</h2>
                 <p>Por favor, aguarde enquanto redirecionamos você para a página de confirmação.</p>
             </div>
-            <script>
-                // Redirecionar após 3 segundos
-                setTimeout(function() {
-                    window.location.href = "<?php echo $redirectUrl; ?>";
-                }, 3000);
-            </script>
         <?php endif; ?>
     </main>
 
