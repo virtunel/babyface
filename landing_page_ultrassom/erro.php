@@ -1,10 +1,7 @@
 
 <?php
 session_start();
-
-// Recuperar erros
 $errors = isset($_SESSION['errors']) ? $_SESSION['errors'] : ['Ocorreu um erro desconhecido. Por favor, tente novamente.'];
-// Limpar erros da sessão
 unset($_SESSION['errors']);
 ?>
 <!DOCTYPE html>
@@ -27,12 +24,10 @@ unset($_SESSION['errors']);
             </div>
         </div>
     </header>
-
     <main>
         <section class="container">
             <div class="error-container">
                 <h2>Ops! Encontramos alguns problemas</h2>
-                
                 <?php if (!empty($errors)): ?>
                     <div class="error-list">
                         <p><strong>Por favor, corrija os seguintes erros:</strong></p>
@@ -43,16 +38,13 @@ unset($_SESSION['errors']);
                         </ul>
                     </div>
                 <?php endif; ?>
-                
                 <p>Não foi possível processar seu pedido. Por favor, volte e verifique as informações fornecidas.</p>
-                
                 <div class="back-button">
                     <a href="javascript:history.back()" class="btn btn-primary">Voltar e Corrigir</a>
                 </div>
             </div>
         </section>
     </main>
-
     <footer class="footer">
         <div class="container">
             <div class="footer-bottom">
