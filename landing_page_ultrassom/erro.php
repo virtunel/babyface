@@ -1,11 +1,8 @@
 
 <?php
-/**
- * Página de erro para exibir mensagens de erro ao usuário
- */
-
-// Iniciar sessão e recuperar erros
 session_start();
+
+// Recuperar erros
 $errors = isset($_SESSION['errors']) ? $_SESSION['errors'] : ['Ocorreu um erro desconhecido. Por favor, tente novamente.'];
 // Limpar erros da sessão
 unset($_SESSION['errors']);
