@@ -89,58 +89,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $telefone = !empty($_POST['telefone']) ? htmlspecialchars($_POST['telefone']) : '';
         $semanas = (int)$_POST['semanas'];
 
-        // Criar pedido no DLocal
-        $orderId = uniqid('PED');
-        $amount = DLOCAL_AMOUNT;
-
-        $dlocalData = [
-            'amount' => $amount,
-            'currency' => DLOCAL_CURRENCY,
-            'country' => DLOCAL_COUNTRY,
-            'payment_method_id' => 'CARD',
-            'order_id' => $orderId,
-            'notification_url' => DLOCAL_NOTIFICATION_URL,
-            'redirect_url' => DLOCAL_RETURN_URL,
-            'payer' => [
-                'name' => $nome,
-                'email' => $email,
-                'phone' => $telefone
+        $paymentData = [
+            "amount" => 19.90,
+            "currency" => "BRL",
+            "country" => "BR",
+            "payment_method_id" => "CARD",
+            "payment_method_flow" => "REDIRECT",
+            "payer" => [
+                "name" => $nome,
+                "email" => $email,
+                "phone" => $telefone,
+                "document" => "11144477735",
+                "document_type" => "CPF" 
             ],
-            'description' => 'Projeção do Bebê - ' . $semanas . ' semanas'
+            "order_id" => uniqid("PED"),
+            "description" => "Projeção de bebê a partir de ultrassom"
         ];
 
-        // Gerar cabeçalhos para DLocal
-        $date = gmdate('Y-m-d\TH:i:s\Z');
-        $message = DLOCAL_TRANS_KEY . $date . $orderId;
-        $signature = hash_hmac('sha256', $message, DLOCAL_SECRET_KEY);
+        $apiKey = DLOCAL_TRANS_KEY; // ou DLOCAL_API_KEY se definido assim
+        $secretKey = DLOCAL_SECRET_KEY;
 
         $headers = [
-            'X-Login: ' . DLOCAL_TRANS_KEY,
-            'X-Trans-Key: ' . DLOCAL_TRANS_KEY,
-            'X-Date: ' . $date,
-            'X-Sign: ' . $signature,
+            'Authorization: Bearer ' . $apiKey . ':' . $secretKey,
             'Content-Type: application/json',
         ];
 
-        // Fazer requisição para DLocal
-        $ch = curl_init(DLOCAL_API_URL . '/payments');
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dlocalData));
+        // Requisição para criar o pedido no DLocal
+        
+        $ch = curl_init('https://api-sbx.dlocalgo.com/v1/payments');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($paymentData));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
         curl_close($ch);
 
-        if ($httpCode === 200 || $httpCode === 201) {
-            $result = json_decode($response, true);
-            if (isset($result['redirect_url'])) {
-                header('Location: ' . $result['redirect_url']);
-                exit;
-            }
+        $result = json_decode($response, true);
+
+        if (($httpCode === 201 || $httpCode === 200) && isset($result['redirect_url'])) {
+            header('Location: ' . $result['redirect_url']);
+            exit;
         } else {
-            $errors[] = "Erro ao processar pagamento. Por favor, tente novamente.";
+            $errors[] = "Erro ao criar pagamento: " . ($result['message'] ?? 'Erro desconhecido');
         }
     }
 }

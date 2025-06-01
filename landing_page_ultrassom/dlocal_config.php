@@ -1,8 +1,16 @@
 <?php
 session_start();
-define('DLOCAL_API_URL', 'https://api-sbx.dlocalgo.com');
-define('DLOCAL_TRANS_KEY', 'zHSYwQzTTShroOMMHqQKiKtYufhLWJnO');
-define('DLOCAL_SECRET_KEY', 'kGDY1i7hU8oe6uwkMTZMPfTXppqgAAtIN3pecV6a');
+
+// Carrega variáveis de ambiente do arquivo .env
+$env = parse_ini_file(dirname(__DIR__) . '/.env');
+
+if (!$env) {
+    die('Erro ao carregar configurações');
+}
+
+define('DLOCAL_API_URL', 'https://api-sbx.dlocalgo.com/v1/me');
+define('DLOCAL_TRANS_KEY', $env['DLOCAL_TRANS_KEY']);
+define('DLOCAL_SECRET_KEY', $env['DLOCAL_SECRET_KEY']);
 define('DLOCAL_CURRENCY', 'BRL');
 define('DLOCAL_COUNTRY', 'BR');
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
