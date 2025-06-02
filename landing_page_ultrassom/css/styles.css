@@ -45,6 +45,7 @@ h2 {
 
 h3 {
     font-size: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 
 p {
@@ -233,6 +234,12 @@ section {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     transition: var(--transition);
+
+}
+
+.benefit-card h3 {
+    margin-bottom: 1rem;
+    text-align: center;
 }
 
 .benefit-card:hover {
@@ -240,29 +247,49 @@ section {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* Centralizar ícones dos benefícios */
 .benefit-icon {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
     width: 70px;
     height: 70px;
     background-color: var(--primary-color);
     color: white;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
 }
 
 .benefit-card:nth-child(2) .benefit-icon {
     background-color: var(--secondary-color);
 }
-
 .benefit-card:nth-child(3) .benefit-icon {
     background-color: #00bcd4;
 }
-
 .benefit-card:nth-child(4) .benefit-icon {
     background-color: #4caf50;
+}
+
+/* Subtítulo dos benefícios */
+.benefit-subtitle {
+    display: block;
+    text-align: left;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #ff6b98; /* Rosa da paleta do projeto */
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+/* Ajuste para listas dos benefícios */
+.benefit-card ul {
+    padding-left: 1.2em;
+}
+.benefit-card ul li {
+    margin-bottom: 0.4em;
 }
 
 /* Como Funciona */
@@ -906,4 +933,6 @@ section {
     .footer-grid {
         grid-template-columns: 1fr;
     }
+    
+    
 }
