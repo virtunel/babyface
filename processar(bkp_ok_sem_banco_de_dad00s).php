@@ -1,7 +1,6 @@
 <?php
 // Incluir arquivo de configuração
 require_once 'dlocal_config.php';
-require_once 'config/database.php';
 
 // A sessão já foi iniciada no dlocal_config.php
 
@@ -89,75 +88,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = htmlspecialchars($_POST['email']);
         $telefone = !empty($_POST['telefone']) ? htmlspecialchars($_POST['telefone']) : '';
         $semanas = (int)$_POST['semanas'];
-        $order_id = uniqid("PED");
 
-        // Conectar ao banco de dados
-        $database = new Database();
-        $db = $database->getConnection();
+        $paymentData = [
+            "amount" => 19.90,
+            "currency" => "BRL",
+            "country" => "BR",
+            "payment_method_id" => "CARD",
+            "payment_method_flow" => "REDIRECT",
+            "payer" => [
+                "name" => $nome,
+                "email" => $email,
+                "phone" => $telefone,
+                "document" => "11144477735",
+                "document_type" => "CPF" 
+            ],
+            "order_id" => uniqid("PED"),
+            "description" => "Projeção de bebê a partir de ultrassom"
+        ];
+
+        $apiKey = DLOCAL_TRANS_KEY; // ou DLOCAL_API_KEY se definido assim
+        $secretKey = DLOCAL_SECRET_KEY;
+
+        $headers = [
+            'Authorization: Bearer ' . $apiKey . ':' . $secretKey,
+            'Content-Type: application/json',
+        ];
+
+        // Requisição para criar o pedido no DLocal
         
-        // Inserir pedido
-        $query = "INSERT INTO pedidos (nome, email, telefone, semanas, arquivo_ultrassom, order_id, status) 
-                 VALUES (:nome, :email, :telefone, :semanas, :arquivo, :order_id, 'pendente')";
-        
-        try {
-            $stmt = $db->prepare($query);
-            $stmt->execute([
-                ':nome' => $nome,
-                ':email' => $email,
-                ':telefone' => $telefone,
-                ':semanas' => $semanas,
-                ':arquivo' => $uploadedFile,
-                ':order_id' => $order_id
-            ]);
-            
-            $paymentData = [
-                "amount" => 19.90,
-                "currency" => "BRL",
-                "country" => "BR",
-                "payment_method_id" => "CARD",
-                "payment_method_flow" => "REDIRECT",
-                "payer" => [
-                    "name" => $nome,
-                    "email" => $email,
-                    "phone" => $telefone,
-                    "document" => "11144477735",
-                    "document_type" => "CPF"
-                ],
-                "order_id" => $order_id,
-                "description" => "Projeção de bebê a partir de ultrassom"
-            ];
+        $ch = curl_init('https://api-sbx.dlocalgo.com/v1/payments');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($paymentData));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-            $apiKey = DLOCAL_TRANS_KEY; // ou DLOCAL_API_KEY se definido assim
-            $secretKey = DLOCAL_SECRET_KEY;
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            $headers = [
-                'Authorization: Bearer ' . $apiKey . ':' . $secretKey,
-                'Content-Type: application/json',
-            ];
+        curl_close($ch);
 
-            // Requisição para criar o pedido no DLocal
-            
-            $ch = curl_init('https://api-sbx.dlocalgo.com/v1/payments');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($paymentData));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $result = json_decode($response, true);
 
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            curl_close($ch);
-
-            $result = json_decode($response, true);
-
-            if (($httpCode === 201 || $httpCode === 200) && isset($result['redirect_url'])) {
-                header('Location: ' . $result['redirect_url']);
-                exit;
-            } else {
-                $errors[] = "Erro ao criar pagamento: " . ($result['message'] ?? 'Erro desconhecido');
-            }
-        } catch(PDOException $e) {
-            $errors[] = "Erro ao salvar pedido: " . $e->getMessage();
+        if (($httpCode === 201 || $httpCode === 200) && isset($result['redirect_url'])) {
+            header('Location: ' . $result['redirect_url']);
+            exit;
+        } else {
+            $errors[] = "Erro ao criar pagamento: " . ($result['message'] ?? 'Erro desconhecido');
         }
     }
 }
