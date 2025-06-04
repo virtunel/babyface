@@ -1,9 +1,41 @@
 <?php
-// Incluir arquivo de configuração
-require_once 'dlocal_config.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once 'config/database.php';
 
-// A sessão já foi iniciada no dlocal_config.php
+// Inicializar conexão com o banco
+try {
+    $database = new Database();
+    $conn = $database->getConnection();
+
+    // Criar tabela se não existir
+    $sql = "CREATE TABLE IF NOT EXISTS pedidos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        telefone VARCHAR(20),
+        semanas INT NOT NULL,
+        arquivo_ultrassom VARCHAR(255) NOT NULL,
+        order_id VARCHAR(50) NOT NULL,
+        status ENUM('pendente', 'pago', 'cancelado') DEFAULT 'pendente',
+        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )";
+    
+    $conn->exec($sql);
+
+} catch(Exception $e) {
+    $_SESSION['errors'] = ["Erro de configuração: " . $e->getMessage()];
+    header("Location: erro.php");
+    exit();
+}
+
+// Criar pasta uploads se não existir
+if (!file_exists('uploads')) {
+    mkdir('uploads', 0777, true);
+}
 
 // Configurações
 $uploadDir = 'uploads/';
@@ -19,7 +51,7 @@ $redirectUrl = '';
 // Processar o formulário quando enviado
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validar campos obrigatórios
-    $requiredFields = ['nome', 'email', 'semanas'];
+    $requiredFields = ['nome', 'email', 'semanas', 'telefone'];
     foreach ($requiredFields as $field) {
         if (empty($_POST[$field])) {
             $errors[] = "O campo " . ucfirst($field) . " é obrigatório.";
@@ -29,6 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validar email
     if (!empty($_POST['email']) && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
         $errors[] = "Por favor, informe um e-mail válido.";
+    }
+
+    // Validar telefone (simples, pode ser aprimorado)
+    if (!empty($_POST['telefone']) && !preg_match('/^[0-9\-\(\) ]{8,20}$/', $_POST['telefone'])) {
+        $errors[] = "Por favor, informe um telefone válido.";
     }
 
     // Validar semanas de gestação
@@ -85,21 +122,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Se não houver erros, criar pedido no DLocal
     if (empty($errors)) {
-        $nome = htmlspecialchars($_POST['nome']);
-        $email = htmlspecialchars($_POST['email']);
-        $telefone = !empty($_POST['telefone']) ? htmlspecialchars($_POST['telefone']) : '';
-        $semanas = (int)$_POST['semanas'];
-        $order_id = uniqid("PED");
-
-        // Conectar ao banco de dados
-        $database = new Database();
-        $db = $database->getConnection();
-        
-        // Inserir pedido
-        $query = "INSERT INTO pedidos (nome, email, telefone, semanas, arquivo_ultrassom, order_id, status) 
-                 VALUES (:nome, :email, :telefone, :semanas, :arquivo, :order_id, 'pendente')";
-        
         try {
+            // Verifica conexão com banco
+            $database = new Database();
+            $db = $database->getConnection();
+            
+            if (!$db) {
+                throw new Exception("Erro de conexão com o banco de dados");
+            }
+
+            // Verifica se a tabela existe
+            $checkTable = $db->query("SHOW TABLES LIKE 'pedidos'");
+            if ($checkTable->rowCount() == 0) {
+                // Cria a tabela se não existir
+                $sql = "CREATE TABLE IF NOT EXISTS pedidos (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    nome VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    telefone VARCHAR(20),
+                    semanas INT NOT NULL,
+                    arquivo_ultrassom VARCHAR(255) NOT NULL,
+                    order_id VARCHAR(50) NOT NULL,
+                    status ENUM('pendente', 'pago', 'cancelado') DEFAULT 'pendente',
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )";
+                $db->exec($sql);
+            }
+
+            // Definir variáveis a partir do POST
+            $nome = trim($_POST['nome']);
+            $email = trim($_POST['email']);
+            $telefone = trim($_POST['telefone']);
+            $semanas = (int)$_POST['semanas'];
+            $order_id = uniqid('order_');
+
+            $query = "INSERT INTO pedidos (nome, email, telefone, semanas, arquivo_ultrassom, order_id, status) 
+                     VALUES (:nome, :email, :telefone, :semanas, :arquivo, :order_id, 'pendente')";
+            
             $stmt = $db->prepare($query);
             $stmt->execute([
                 ':nome' => $nome,
@@ -109,7 +169,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':arquivo' => $uploadedFile,
                 ':order_id' => $order_id
             ]);
-            
+
+            // Define sucesso após inserção bem sucedida
+            $success = true;
+
             $paymentData = [
                 "amount" => 19.90,
                 "currency" => "BRL",
@@ -127,8 +190,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "description" => "Projeção de bebê a partir de ultrassom"
             ];
 
-            $apiKey = DLOCAL_TRANS_KEY; // ou DLOCAL_API_KEY se definido assim
-            $secretKey = DLOCAL_SECRET_KEY;
+            $apiKey = 'zHSYwQzTTShroOMMHqQKiKtYufhLWJnO'; // ou DLOCAL_API_KEY se definido assim
+            $secretKey = 'kGDY1i7hU8oe6uwkMTZMPfTXppqgAAtIN3pecV6a';
+            // $apiKey = DLOCAL_TRANS_KEY; // ou DLOCAL_API_KEY se definido assim
+            // $secretKey = DLOCAL_SECRET_KEY;
 
             $headers = [
                 'Authorization: Bearer ' . $apiKey . ':' . $secretKey,
@@ -151,20 +216,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = json_decode($response, true);
 
             if (($httpCode === 201 || $httpCode === 200) && isset($result['redirect_url'])) {
-                header('Location: ' . $result['redirect_url']);
-                exit;
+                $success = true;
+                $_SESSION['payment_url'] = $result['redirect_url'];
+                header("Location: " . $result['redirect_url']);
+                exit();
             } else {
-                $errors[] = "Erro ao criar pagamento: " . ($result['message'] ?? 'Erro desconhecido');
+                throw new Exception("Erro ao criar pagamento: " . ($result['message'] ?? 'Erro desconhecido'));
             }
-        } catch(PDOException $e) {
-            $errors[] = "Erro ao salvar pedido: " . $e->getMessage();
+
+        } catch(Exception $e) {
+            error_log("Erro detalhado: " . $e->getMessage());
+            $_SESSION['errors'] = [$e->getMessage()];
+            header("Location: erro.php");
+            exit();
         }
     }
 }
 
-// Se houver erros, incluir página de erro
+// Modifica o redirecionamento de erro
 if (!empty($errors)) {
     $_SESSION['errors'] = $errors;
+    $_SESSION['form_data'] = $_POST; // Guarda dados do formulário
     header('Location: erro.php');
     exit;
 }

@@ -1,10 +1,11 @@
 <?php
-session_start(); // Deve ser o primeiro comando no arquivo
+session_start();
+$errors = $_SESSION['errors'] ?? [];
+$formData = $_SESSION['form_data'] ?? [];
 
-// Recuperar erros
-$errors = isset($_SESSION['errors']) ? $_SESSION['errors'] : ['Ocorreu um erro desconhecido. Por favor, tente novamente.'];
-// Limpar erros da sessão
+// Limpa a sessão após usar
 unset($_SESSION['errors']);
+unset($_SESSION['form_data']);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -16,7 +17,6 @@ unset($_SESSION['errors']);
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header class="navbar">
@@ -26,13 +26,14 @@ unset($_SESSION['errors']);
             </div>
         </div>
     </header>
+
     <main>
-        <section class="container">
-            <div class="error-container">
-                <h2>Ops! Encontramos alguns problemas</h2>
+        <div class="container">
+            <div class="error-content">
+                <h1>Ops! Encontramos alguns problemas</h1>
                 <?php if (!empty($errors)): ?>
                     <div class="error-list">
-                        <p><strong>Por favor, corrija os seguintes erros:</strong></p>
+                        <p>Por favor, corrija os seguintes erros:</p>
                         <ul>
                             <?php foreach ($errors as $error): ?>
                                 <li><?php echo htmlspecialchars($error); ?></li>
@@ -40,13 +41,11 @@ unset($_SESSION['errors']);
                         </ul>
                     </div>
                 <?php endif; ?>
-                <p>Não foi possível processar seu pedido. Por favor, volte e verifique as informações fornecidas.</p>
-                <div class="back-button">
-                    <a href="javascript:history.back()" class="btn btn-primary">Voltar e Corrigir</a>
-                </div>
+                <a href="javascript:history.back()" class="btn btn-primary">Voltar e tentar novamente</a>
             </div>
-        </section>
+        </div>
     </main>
+
     <footer class="footer">
         <div class="container">
             <div class="footer-bottom">
